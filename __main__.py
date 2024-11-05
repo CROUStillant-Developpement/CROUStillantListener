@@ -17,7 +17,7 @@ class Listener:
         self.session = None
         self.webhook = None
 
-        self.logger = Logger("listener.log")
+        self.logger = Logger("listener")
 
 
     def createWebhook(self):
