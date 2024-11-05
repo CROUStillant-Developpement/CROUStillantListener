@@ -1,0 +1,11 @@
+services:
+  listener:
+    container_name: listener
+    build: .
+    restart: unless-stopped
+    networks:
+      - CROUStillantNetwork
+
+networks:
+  CROUStillantNetwork:
+    external: true
