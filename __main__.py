@@ -13,6 +13,9 @@ load_dotenv(dotenv_path=".env")
 
 
 class Listener:
+    """
+    Listener, détecte les nouveaux restaurants et les notifie sur Discord.
+    """
     def __init__(self) -> None:
         self.session = None
         self.webhook = None
