@@ -38,7 +38,10 @@ class Listener:
         if not self.webhook:
             self.createWebhook()
 
-        horaires = loads(data.get("horaires", "[]"))
+        if data.get("horaires", None):
+            horaires = loads(data.get("horaires"))
+        else:
+            horaires = []
 
         embed = Embed(
             title=f"{data.get('nom')}",
