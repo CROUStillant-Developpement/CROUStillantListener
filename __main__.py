@@ -7,6 +7,8 @@ from os import environ
 from aiohttp import ClientSession
 from dotenv import load_dotenv
 from json import loads
+from datetime import datetime
+from pytz import timezone
 
 
 load_dotenv(dotenv_path=".env")
@@ -43,13 +45,16 @@ class Listener:
         else:
             horaires = []
 
+        horaires_str = f"\n- Horaires : `{' '.join(horaires)}`" if horaires else ""
+
+        year = datetime.now(tz=timezone('Europe/Paris')).year
+
         embed = Embed(
             title=f"{data.get('nom')}",
             description=f"""
-- Adresse : `{data.get('adresse', '')}`
-- Téléphone : `{data.get('telephone', '')}`
-- Email : `{data.get('email', '')}`
-- Horaires : `{' '.join(horaires)}`
+- Adresse : `{data.get('adresse', '') if data.get('adresse') else '-'}`
+- Téléphone : `{data.get('telephone') if data.get('telephone') else '-'}`
+- Email : `{data.get('email') if data.get('email') else '-'}`{horaires_str}
 - Zone : `{data.get('zone', '')}`
 - Latitude : `{data.get('latitude', '')}`
 - Longitude : `{data.get('longitude', '')}`
@@ -57,16 +62,17 @@ class Listener:
             """,
             color=0x6A9056
         )
+
         embed.add_field(
             name="\u2060",
-            value=f"*Retrouvez le ici : https://google.fr/maps/place/{data.get('latitude', '')},{data.get('longitude', '')}*",
+            value=f"*Retrouvez le ici : [**` croustillant.bayfield.dev `**](https://croustillant.bayfield.dev/fr/restaurants/{data.get('rid')})*",
             inline=False
         )
         embed.set_author(name="Nouveau restaurant détecté !")
-        embed.set_footer(text="CROUStillant Développement © 2022 - 2024 | Tous droits réservés.", icon_url="https://github.com/CROUStillant-Developpement/CROUStillantAssets/raw/main/logo.png")
+        embed.set_footer(text=f"CROUStillant Développement © 2022 - {year} | Tous droits réservés.", icon_url="https://croustillant.bayfield.dev/logo.png")
         embed.set_image(url=data.get("image_url", None))
 
-        await self.webhook.send(embed=embed, username='CROUStillant', avatar_url="https://github.com/CROUStillant-Developpement/CROUStillantAssets/raw/main/logo.png")
+        await self.webhook.send(embed=embed, username='CROUStillant', avatar_url="https://croustillant.bayfield.dev/logo.png")
 
 
     async def run(self):
