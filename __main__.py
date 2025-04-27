@@ -65,14 +65,14 @@ class Listener:
 
         embed.add_field(
             name="\u2060",
-            value=f"*Retrouvez le ici : [**` croustillant.bayfield.dev `**](https://croustillant.bayfield.dev/fr/restaurants/{data.get('rid')})*",
+            value=f"*Retrouvez le ici : [**` croustillant.menu `**](https://croustillant.menu/fr/restaurants/{data.get('rid')})*",
             inline=False
         )
         embed.set_author(name="Nouveau restaurant détecté !")
-        embed.set_footer(text=f"CROUStillant Développement © 2022 - {year} | Tous droits réservés.", icon_url="https://croustillant.bayfield.dev/logo.png")
+        embed.set_footer(text=f"CROUStillant Développement © 2022 - {year} | Tous droits réservés.", icon_url="https://croustillant.menu/logo.png")
         embed.set_image(url=data.get("image_url", None))
 
-        await self.webhook.send(embed=embed, username='CROUStillant', avatar_url="https://croustillant.bayfield.dev/logo.png")
+        await self.webhook.send(embed=embed, username='CROUStillant', avatar_url="https://croustillant.menu/logo.png")
 
 
     async def run(self):
