@@ -42,7 +42,7 @@ jobs:
       - name: Extract version from package.toml
         id: get_version
         run: |
-          VERSION=$(grep '^version\s*=' package.toml | sed -E 's/version\s*=\s*"([^"]+)"/\1/')
+          VERSION=$(grep '^version\s*=' pyproject.toml | sed -E 's/version\s*=\s*"([^"]+)"/\1/')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata (tags, labels) for Docker
