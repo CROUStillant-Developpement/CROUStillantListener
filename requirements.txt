@@ -1,5 +1,0 @@
-aiohttp==3.9.5
-asyncpg==0.29.0
-python-dotenv==1.0.1
-discord.py==2.3.2
-pytz==2024.2
