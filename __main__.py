@@ -75,6 +75,42 @@ class Listener:
         await self.webhook.send(embed=embed, username='CROUStillant', avatar_url="https://croustillant.menu/logo.png")
 
 
+    async def postRestaurantStateChange(self, connection, pid, channel, data: str):
+        self.logger.info(f"Notification reçue: [{channel}] {data}")
+
+        data = loads(data)
+
+        if not self.webhook:
+            self.createWebhook()
+
+        is_active = data.get('actif', False)
+        state_text = "actif" if is_active else "inactif"
+        state_color = 0x6A9056 if is_active else 0xD9534F
+
+        year = datetime.now(tz=timezone('Europe/Paris')).year
+
+        embed = Embed(
+            title=f"{data.get('nom')}",
+            description=f"""
+- Adresse : `{data.get('adresse', '') if data.get('adresse') else '-'}`
+- Zone : `{data.get('zone', '')}`
+- État : `{state_text}`
+            """,
+            color=state_color
+        )
+
+        embed.add_field(
+            name="\u2060",
+            value=f"*Retrouvez le ici : [**` croustillant.menu `**](https://croustillant.menu/fr/restaurants/{data.get('rid')})*",
+            inline=False
+        )
+        embed.set_author(name=f"Restaurant {'activé' if is_active else 'désactivé'} !")
+        embed.set_footer(text=f"CROUStillant Développement © 2022 - {year} | Tous droits réservés.", icon_url="https://croustillant.menu/logo.png")
+        embed.set_image(url=data.get("image_url", None))
+
+        await self.webhook.send(embed=embed, username='CROUStillant', avatar_url="https://croustillant.menu/logo.png")
+
+
     async def run(self):
         self.logger.info("Connection en cours...")
 
@@ -86,6 +122,7 @@ class Listener:
             port=environ["POSTGRES_PORT"]
         )
         await conn.add_listener('insert', self.postNewRestaurants)
+        await conn.add_listener('actif_change', self.postRestaurantStateChange)
 
         self.logger.info("Écoute des notifications...")
 
