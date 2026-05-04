@@ -9,5 +9,5 @@ dependencies = [
     "asyncpg>=0.30.0",
     "discord-py>=2.5.2",
     "python-dotenv>=1.1.1",
-    "pytz>=2025.2",
+    "pytz>=2026.2",
 ]
