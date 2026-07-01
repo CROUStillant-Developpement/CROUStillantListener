@@ -133,15 +133,42 @@ class Listener:
 
     async def run(self) -> None:
         """
-        Établit la connexion PostgreSQL et démarre la boucle d'écoute.
+        Maintient la connexion PostgreSQL et la boucle d'écoute active.
+
+        Une connexion ``LISTEN`` peut être coupée silencieusement (pare-feu,
+        pgbouncer, timeout d'inactivité...) sans qu'``asyncpg`` ne lève
+        d'exception : le processus reste en vie mais ne reçoit plus aucune
+        notification. Cette méthode boucle donc indéfiniment sur
+        :meth:`_listenOnce`, qui détecte la perte de connexion (coupure
+        explicite ou silencieuse) et se reconnecte automatiquement.
+        """
+        while True:
+            try:
+                await self._listenOnce()
+            except Exception as e:
+                self.logger.error(f"Connexion PostgreSQL perdue, nouvelle tentative dans 5 secondes... ({e})")
+                await asyncio.sleep(5)
+
+
+    async def _listenOnce(self) -> None:
+        """
+        Établit une connexion PostgreSQL et écoute les notifications jusqu'à ce
+        que la connexion soit perdue.
 
         Se connecte à la base de données à partir des variables d'environnement
         ``POSTGRES_DATABASE``, ``POSTGRES_USER``, ``POSTGRES_PASSWORD``,
         ``POSTGRES_HOST`` et ``POSTGRES_PORT``, puis enregistre les callbacks
         :meth:`postNewRestaurants` et :meth:`postRestaurantStateChange` sur leurs
-        canaux respectifs. La boucle tourne indéfiniment jusqu'à interruption.
+        canaux respectifs.
 
-        :raises asyncpg.PostgresConnectionError: Si la connexion à la base échoue.
+        Une coupure explicite (connexion fermée par le serveur) est détectée
+        via :meth:`asyncpg.Connection.add_termination_listener`. Une coupure
+        silencieuse (connexion abandonnée sans notification, par exemple par un
+        pare-feu ou un proxy) est détectée via une requête de test (``SELECT
+        1``) exécutée périodiquement.
+
+        :raises Exception: Si la connexion est perdue ou si la requête de
+            test échoue, afin de déclencher une reconnexion depuis :meth:`run`.
         """
         self.logger.info("Connection en cours...")
 
@@ -152,13 +179,30 @@ class Listener:
             host=environ["POSTGRES_HOST"],
             port=environ["POSTGRES_PORT"]
         )
-        await conn.add_listener('insert', self.postNewRestaurants)
-        await conn.add_listener('actif_change', self.postRestaurantStateChange)
 
-        self.logger.info("Écoute des notifications...")
+        disconnected = asyncio.Event()
+        conn.add_termination_listener(lambda _conn: disconnected.set())
 
-        while True:
-            await asyncio.sleep(1)
+        try:
+            await conn.add_listener('insert', self.postNewRestaurants)
+            await conn.add_listener('actif_change', self.postRestaurantStateChange)
+
+            self.logger.info("Écoute des notifications...")
+
+            while not disconnected.is_set():
+                try:
+                    await asyncio.wait_for(disconnected.wait(), timeout=30)
+                except asyncio.TimeoutError:
+                    # Requête de test : détecte une connexion abandonnée en silence
+                    await conn.execute("SELECT 1;")
+
+            raise ConnectionError("La connexion PostgreSQL a été fermée par le serveur")
+        finally:
+            try:
+                if not conn.is_closed():
+                    await conn.close()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
